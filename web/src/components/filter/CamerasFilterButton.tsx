@@ -29,10 +29,7 @@ export function CamerasFilterButton({
 }: CameraFilterButtonProps) {
   const [open, setOpen] = useState(false);
   const [currentCameras, setCurrentCameras] = useState<string[] | undefined>(
-    selectedCameras === undefined ? [...allCameras] : selectedCameras,
-  );
-  const [allCamerasSelected, setAllCamerasSelected] = useState(
-    selectedCameras === undefined,
+    selectedCameras,
   );
 
   const buttonText = useMemo(() => {
@@ -40,26 +37,17 @@ export function CamerasFilterButton({
       return "Cameras";
     }
 
-    if (allCamerasSelected) {
+    if (!selectedCameras || selectedCameras.length == 0) {
       return "All Cameras";
     }
 
-    if (!currentCameras || currentCameras.length === 0) {
-      return "No cameras";
-    }
-
-    return `${currentCameras.includes("birdseye") ? currentCameras.length - 1 : currentCameras.length} Camera${
-      currentCameras.length !== 1 ? "s" : ""
-    }`;
-  }, [allCamerasSelected, currentCameras]);
+    return `${selectedCameras.includes("birdseye") ? selectedCameras.length - 1 : selectedCameras.length} Camera${selectedCameras.length !== 1 ? "s" : ""}`;
+  }, [selectedCameras]);
 
   // ui
 
   useEffect(() => {
-    setCurrentCameras(
-      selectedCameras === undefined ? [...allCameras] : selectedCameras,
-    );
-    setAllCamerasSelected(selectedCameras === undefined);
+    setCurrentCameras(selectedCameras);
     // only refresh when state changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCameras]);
@@ -67,6 +55,7 @@ export function CamerasFilterButton({
   const trigger = (
     <Button
       className="flex items-center gap-2 capitalize"
+      aria-label="Cameras Filter"
       variant={selectedCameras?.length == undefined ? "default" : "select"}
       size="sm"
     >
@@ -81,106 +70,14 @@ export function CamerasFilterButton({
     </Button>
   );
   const content = (
-    <>
-      {isMobile && (
-        <>
-          <DropdownMenuLabel className="flex justify-center">
-            Cameras
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-        </>
-      )}
-      <div className="scrollbar-container h-auto max-h-[80dvh] overflow-y-auto overflow-x-hidden p-4">
-        <FilterSwitch
-          isChecked={allCamerasSelected}
-          label="All Cameras"
-          onCheckedChange={(isChecked) => {
-            setAllCamerasSelected(isChecked);
-
-            if (isChecked) {
-              setCurrentCameras([...allCameras]);
-            } else {
-              setCurrentCameras([]);
-            }
-          }}
-        />
-        {groups.length > 0 && (
-          <>
-            <DropdownMenuSeparator className="mt-2" />
-            {groups.map(([name, conf]) => {
-              return (
-                <div
-                  key={name}
-                  className="w-full cursor-pointer rounded-lg px-2 py-1.5 text-sm capitalize text-primary hover:bg-muted"
-                  onClick={() => setCurrentCameras([...conf.cameras])}
-                >
-                  {name}
-                </div>
-              );
-            })}
-          </>
-        )}
-        <DropdownMenuSeparator className="my-2" />
-        <div className="flex flex-col gap-2.5">
-          {allCameras.map((item) => (
-            <FilterSwitch
-              key={item}
-              isChecked={currentCameras?.includes(item) ?? false}
-              label={item.replaceAll("_", " ")}
-              onCheckedChange={(isChecked) => {
-                if (isChecked) {
-                  const updatedCameras = currentCameras
-                    ? [...currentCameras]
-                    : [];
-                  updatedCameras.push(item);
-                  setCurrentCameras(updatedCameras);
-
-                  // Check if all cameras are now selected
-                  setAllCamerasSelected(
-                    updatedCameras.length === allCameras.length,
-                  );
-                } else {
-                  const updatedCameras = currentCameras
-                    ? [...currentCameras]
-                    : [];
-                  const index = updatedCameras.indexOf(item);
-
-                  if (index > -1) {
-                    updatedCameras.splice(index, 1);
-                    setCurrentCameras(updatedCameras);
-                  }
-
-                  // Deselecting one camera should disable the "All Cameras" switch
-                  setAllCamerasSelected(false);
-                }
-              }}
-            />
-          ))}
-        </div>
-      </div>
-      <DropdownMenuSeparator className="my-2" />
-      <div className="flex items-center justify-evenly p-2">
-        <Button
-          variant="select"
-          disabled={currentCameras?.length === 0}
-          onClick={() => {
-            updateCameraFilter(allCamerasSelected ? undefined : currentCameras);
-            setOpen(false);
-          }}
-        >
-          Apply
-        </Button>
-        <Button
-          onClick={() => {
-            setCurrentCameras([...allCameras]);
-            setAllCamerasSelected(true);
-            updateCameraFilter(undefined);
-          }}
-        >
-          Reset
-        </Button>
-      </div>
-    </>
+    <CamerasFilterContent
+      allCameras={allCameras}
+      groups={groups}
+      currentCameras={currentCameras}
+      setCurrentCameras={setCurrentCameras}
+      setOpen={setOpen}
+      updateCameraFilter={updateCameraFilter}
+    />
   );
 
   if (isMobile) {
@@ -189,8 +86,7 @@ export function CamerasFilterButton({
         open={open}
         onOpenChange={(open) => {
           if (!open) {
-            setCurrentCameras(selectedCameras ?? allCameras);
-            setAllCamerasSelected(selectedCameras === undefined);
+            setCurrentCameras(selectedCameras);
           }
 
           setOpen(open);
@@ -210,8 +106,7 @@ export function CamerasFilterButton({
       open={open}
       onOpenChange={(open) => {
         if (!open) {
-          setCurrentCameras(selectedCameras ?? allCameras);
-          setAllCamerasSelected(selectedCameras === undefined);
+          setCurrentCameras(selectedCameras);
         }
         setOpen(open);
       }}
@@ -219,5 +114,115 @@ export function CamerasFilterButton({
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent>{content}</DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+type CamerasFilterContentProps = {
+  allCameras: string[];
+  currentCameras: string[] | undefined;
+  groups: [string, CameraGroupConfig][];
+  setCurrentCameras: (cameras: string[] | undefined) => void;
+  setOpen: (open: boolean) => void;
+  updateCameraFilter: (cameras: string[] | undefined) => void;
+};
+export function CamerasFilterContent({
+  allCameras,
+  currentCameras,
+  groups,
+  setCurrentCameras,
+  setOpen,
+  updateCameraFilter,
+}: CamerasFilterContentProps) {
+  return (
+    <>
+      {isMobile && (
+        <>
+          <DropdownMenuLabel className="flex justify-center">
+            Cameras
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+        </>
+      )}
+      <div className="scrollbar-container flex h-auto max-h-[80dvh] flex-col gap-2 overflow-y-auto overflow-x-hidden p-4">
+        <FilterSwitch
+          isChecked={currentCameras == undefined}
+          label="All Cameras"
+          onCheckedChange={(isChecked) => {
+            if (isChecked) {
+              setCurrentCameras(undefined);
+            }
+          }}
+        />
+        {groups.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            {groups.map(([name, conf]) => {
+              return (
+                <div
+                  key={name}
+                  className="w-full cursor-pointer rounded-lg px-2 py-0.5 text-sm capitalize text-primary hover:bg-muted"
+                  onClick={() => {
+                    setCurrentCameras([...conf.cameras]);
+                  }}
+                >
+                  {name}
+                </div>
+              );
+            })}
+          </>
+        )}
+        <DropdownMenuSeparator />
+        <div className="flex flex-col gap-2.5">
+          {allCameras.map((item) => (
+            <FilterSwitch
+              key={item}
+              isChecked={currentCameras?.includes(item) ?? false}
+              label={item.replaceAll("_", " ")}
+              onCheckedChange={(isChecked) => {
+                if (isChecked) {
+                  const updatedCameras = currentCameras
+                    ? [...currentCameras]
+                    : [];
+                  updatedCameras.push(item);
+                  setCurrentCameras(updatedCameras);
+                } else {
+                  const updatedCameras = currentCameras
+                    ? [...currentCameras]
+                    : [];
+                  // can not deselect the last item
+                  if (updatedCameras.length > 1) {
+                    updatedCameras.splice(updatedCameras.indexOf(item), 1);
+                    setCurrentCameras(updatedCameras);
+                  }
+                }
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      <DropdownMenuSeparator />
+      <div className="flex items-center justify-evenly p-2">
+        <Button
+          aria-label="Apply"
+          variant="select"
+          disabled={currentCameras?.length === 0}
+          onClick={() => {
+            updateCameraFilter(currentCameras);
+            setOpen(false);
+          }}
+        >
+          Apply
+        </Button>
+        <Button
+          aria-label="Reset"
+          onClick={() => {
+            setCurrentCameras(undefined);
+            updateCameraFilter(undefined);
+          }}
+        >
+          Reset
+        </Button>
+      </div>
+    </>
   );
 }

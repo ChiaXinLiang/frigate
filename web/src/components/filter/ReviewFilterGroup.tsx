@@ -1,5 +1,4 @@
 import { Button } from "../ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import useSWR from "swr";
 import { FrigateConfig } from "@/types/frigateConfig";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -8,7 +7,6 @@ import { ReviewFilter, ReviewSeverity, ReviewSummary } from "@/types/review";
 import { getEndOfDayTimestamp } from "@/utils/dateUtil";
 import { FaCheckCircle, FaFilter, FaRunning } from "react-icons/fa";
 import { isDesktop, isMobile } from "react-device-detect";
-import { Drawer, DrawerContent, DrawerTrigger } from "../ui/drawer";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import MobileReviewSettingsDrawer, {
@@ -19,6 +17,7 @@ import FilterSwitch from "./FilterSwitch";
 import { FilterList } from "@/types/filter";
 import CalendarFilterButton from "./CalendarFilterButton";
 import { CamerasFilterButton } from "./CamerasFilterButton";
+import PlatformAwareDialog from "../overlay/dialog/PlatformAwareDialog";
 
 const REVIEW_FILTERS = [
   "cameras",
@@ -242,6 +241,8 @@ export default function ReviewFilterGroup({
           mode="none"
           setMode={() => {}}
           setRange={() => {}}
+          showExportPreview={false}
+          setShowExportPreview={() => {}}
         />
       )}
     </div>
@@ -277,6 +278,7 @@ function ShowReviewFilter({
 
       <Button
         className="block duration-0 md:hidden"
+        aria-label="Show reviewed"
         variant={showReviewedSwitch ? "select" : "default"}
         size="sm"
         onClick={() =>
@@ -337,6 +339,7 @@ function GeneralFilterButton({
         selectedLabels?.length || selectedZones?.length ? "select" : "default"
       }
       className="flex items-center gap-2 capitalize"
+      aria-label="Filter"
     >
       <FaFilter
         className={`${selectedLabels?.length || selectedZones?.length ? "text-selected-foreground" : "text-secondary-foreground"}`}
@@ -367,28 +370,10 @@ function GeneralFilterButton({
     />
   );
 
-  if (isMobile) {
-    return (
-      <Drawer
-        open={open}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCurrentLabels(selectedLabels);
-          }
-
-          setOpen(open);
-        }}
-      >
-        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-        <DrawerContent className="max-h-[75dvh] overflow-hidden">
-          {content}
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
-    <Popover
+    <PlatformAwareDialog
+      trigger={trigger}
+      content={content}
       open={open}
       onOpenChange={(open) => {
         if (!open) {
@@ -397,10 +382,7 @@ function GeneralFilterButton({
 
         setOpen(open);
       }}
-    >
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent>{content}</PopoverContent>
-    </Popover>
+    />
   );
 }
 
@@ -558,6 +540,7 @@ export function GeneralFilterContent({
       <DropdownMenuSeparator />
       <div className="flex items-center justify-evenly p-2">
         <Button
+          aria-label="Apply"
           variant="select"
           onClick={() => {
             if (selectedLabels != currentLabels) {
@@ -574,6 +557,7 @@ export function GeneralFilterContent({
           Apply
         </Button>
         <Button
+          aria-label="Reset"
           onClick={() => {
             setCurrentLabels(undefined);
             setCurrentZones?.(undefined);
@@ -621,6 +605,7 @@ function ShowMotionOnlyButton({
         <Button
           size="sm"
           className="duration-0"
+          aria-label="Show Motion Only"
           variant={motionOnlyButton ? "select" : "default"}
           onClick={() => setMotionOnlyButton(!motionOnlyButton)}
         >

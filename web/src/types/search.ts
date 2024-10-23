@@ -1,9 +1,28 @@
+const SEARCH_FILTERS = [
+  "cameras",
+  "date",
+  "time",
+  "general",
+  "zone",
+  "sub",
+  "source",
+] as const;
+export type SearchFilters = (typeof SEARCH_FILTERS)[number];
+export const DEFAULT_SEARCH_FILTERS: SearchFilters[] = [
+  "cameras",
+  "date",
+  "time",
+  "general",
+  "zone",
+  "sub",
+  "source",
+];
+
 export type SearchSource = "similarity" | "thumbnail" | "description";
 
 export type SearchResult = {
   id: string;
   camera: string;
-  description?: string;
   start_time: number;
   end_time?: number;
   score: number;
@@ -16,6 +35,7 @@ export type SearchResult = {
   zones: string[];
   search_source: SearchSource;
   search_distance: number;
+  top_score: number; // for old events
   data: {
     top_score: number;
     score: number;
@@ -25,16 +45,53 @@ export type SearchResult = {
     area: number;
     ratio: number;
     type: "object" | "audio" | "manual";
+    description?: string;
   };
 };
 
 export type SearchFilter = {
+  query?: string;
   cameras?: string[];
   labels?: string[];
-  subLabels?: string[];
+  sub_labels?: string[];
   zones?: string[];
   before?: number;
   after?: number;
+  min_score?: number;
+  max_score?: number;
+  has_snapshot?: number;
+  has_clip?: number;
+  time_range?: string;
   search_type?: SearchSource[];
   event_id?: string;
+};
+
+export const DEFAULT_TIME_RANGE_AFTER = "00:00";
+export const DEFAULT_TIME_RANGE_BEFORE = "23:59";
+
+export type SearchQueryParams = {
+  cameras?: string[];
+  labels?: string[];
+  sub_labels?: string[];
+  zones?: string[];
+  before?: string;
+  after?: string;
+  min_score?: number;
+  max_score?: number;
+  search_type?: string;
+  limit?: number;
+  in_progress?: number;
+  include_thumbnails?: number;
+  query?: string;
+  page?: number;
+  time_range?: string;
+};
+
+export type SearchQuery = [string, SearchQueryParams] | null;
+export type FilterType = Exclude<keyof SearchFilter, "query">;
+
+export type SavedSearchQuery = {
+  name: string;
+  search: string;
+  filter: SearchFilter | undefined;
 };

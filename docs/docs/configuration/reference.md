@@ -138,6 +138,16 @@ model:
   # Optional: Label name modifications. These are merged into the standard labelmap.
   labelmap:
     2: vehicle
+  # Optional: Map of object labels to their attribute labels (default: depends on model)
+  attributes_map:
+    person:
+      - amazon
+      - face
+    car:
+      - amazon
+      - fedex
+      - license_plate
+      - ups
 
 # Optional: Audio Events Configuration
 # NOTE: Can be overridden at the camera level
@@ -210,6 +220,10 @@ birdseye:
 # Optional: ffmpeg configuration
 # More information about presets at https://docs.frigate.video/configuration/ffmpeg_presets
 ffmpeg:
+  # Optional: ffmpeg binry path (default: shown below)
+  # can also be set to `7.0` or `5.0` to specify one of the included versions
+  # or can be set to any path that holds `bin/ffmpeg` & `bin/ffprobe`
+  path: "default"
   # Optional: global ffmpeg args (default: shown below)
   global_args: -hide_banner -loglevel warning -threads 2
   # Optional: global hwaccel args (default: auto detect)
@@ -320,6 +334,9 @@ review:
       - car
       - person
     # Optional: required zones for an object to be marked as an alert (default: none)
+    # NOTE: when settings required zones globally, this zone must exist on all cameras
+    #       or the config will be considered invalid. In that case the required_zones
+    #       should be configured at the camera level.
     required_zones:
       - driveway
   # Optional: detections configuration
@@ -329,12 +346,20 @@ review:
       - car
       - person
     # Optional: required zones for an object to be marked as a detection (default: none)
+    # NOTE: when settings required zones globally, this zone must exist on all cameras
+    #       or the config will be considered invalid. In that case the required_zones
+    #       should be configured at the camera level.
     required_zones:
       - driveway
 
 # Optional: Motion configuration
 # NOTE: Can be overridden at the camera level
 motion:
+  # Optional: enables detection for the camera (default: True)
+  # NOTE: Motion detection is required for object detection,
+  #       setting this to False and leaving detect enabled
+  #       will result in an error on startup.
+  enabled: False
   # Optional: The threshold passed to cv2.threshold to determine if a pixel is different enough to be counted as motion. (default: shown below)
   # Increasing this value will make motion detection less sensitive and decreasing it will make motion detection more sensitive.
   # The value should be between 1 and 255.
@@ -493,6 +518,9 @@ semantic_search:
   enabled: False
   # Optional: Re-index embeddings database from historical tracked objects (default: shown below)
   reindex: False
+  # Optional: Set the model size used for embeddings. (default: shown below)
+  # NOTE: small model runs on CPU and large model runs on GPU
+  model_size: "small"
 
 # Optional: Configuration for AI generated tracked object descriptions
 # NOTE: Semantic Search must be enabled for this to do anything.
@@ -500,7 +528,7 @@ semantic_search:
 # to Google or OpenAI's LLMs to generate descriptions. It can be overridden at
 # the camera level (enabled: False) to enhance privacy for indoor cameras.
 genai:
-  # Optional: Enable Google Gemini description generation (default: shown below)
+  # Optional: Enable AI description generation (default: shown below)
   enabled: False
   # Required if enabled: Provider must be one of ollama, gemini, or openai
   provider: ollama
@@ -708,6 +736,26 @@ cameras:
       # By default the cameras are sorted alphabetically.
       order: 0
 
+    # Optional: Configuration for AI generated tracked object descriptions
+    genai:
+      # Optional: Enable AI description generation (default: shown below)
+      enabled: False
+      # Optional: Use the object snapshot instead of thumbnails for description generation (default: shown below)
+      use_snapshot: False
+      # Optional: The default prompt for generating descriptions. Can use replacement
+      # variables like "label", "sub_label", "camera" to make more dynamic. (default: shown below)
+      prompt: "Describe the {label} in the sequence of images with as much detail as possible. Do not describe the background."
+      # Optional: Object specific prompts to customize description results
+      # Format: {label}: {prompt}
+      object_prompts:
+        person: "My special person prompt."
+      # Optional: objects to generate descriptions for (default: all objects that are tracked)
+      objects:
+        - person
+        - cat
+      # Optional: Restrict generation to objects that entered any of the listed zones (default: none, all zones qualify)
+      required_zones: []
+
 # Optional
 ui:
   # Optional: Set a timezone to use in the UI (default: use browser local time)
@@ -770,7 +818,7 @@ camera_groups:
       - side_cam
       - front_doorbell_cam
     # Required: icon used for group
-    icon: car
+    icon: LuCar
     # Required: index of this group
     order: 0
 ```

@@ -62,8 +62,7 @@ class SegmentInfo:
 
 class RecordingMaintainer(threading.Thread):
     def __init__(self, config: FrigateConfig, stop_event: MpEvent):
-        threading.Thread.__init__(self)
-        self.name = "recording_maintainer"
+        super().__init__(name="recording_maintainer")
         self.config = config
 
         # create communication for retained recordings
@@ -90,9 +89,9 @@ class RecordingMaintainer(threading.Thread):
             try:
                 if process.name() != "ffmpeg":
                     continue
-                flist = process.open_files()
-                if flist:
-                    for nt in flist:
+                file_list = process.open_files()
+                if file_list:
+                    for nt in file_list:
                         if nt.path.startswith(CACHE_DIR):
                             files_in_use.append(nt.path.split("/")[-1])
             except psutil.Error:
@@ -129,10 +128,40 @@ class RecordingMaintainer(threading.Thread):
                 grouped_recordings[camera], key=lambda s: s["start_time"]
             )
 
-            segment_count = len(grouped_recordings[camera])
-            if segment_count > keep_count:
+            camera_info = self.object_recordings_info[camera]
+            most_recently_processed_frame_time = (
+                camera_info[-1][0] if len(camera_info) > 0 else 0
+            )
+
+            processed_segment_count = len(
+                list(
+                    filter(
+                        lambda r: r["start_time"].timestamp()
+                        < most_recently_processed_frame_time,
+                        grouped_recordings[camera],
+                    )
+                )
+            )
+
+            # see if the recording mover is too slow and segments need to be deleted
+            if processed_segment_count > keep_count:
                 logger.warning(
-                    f"Unable to keep up with recording segments in cache for {camera}. Keeping the {keep_count} most recent segments out of {segment_count} and discarding the rest..."
+                    f"Unable to keep up with recording segments in cache for {camera}. Keeping the {keep_count} most recent segments out of {processed_segment_count} and discarding the rest..."
+                )
+                to_remove = grouped_recordings[camera][:-keep_count]
+                for rec in to_remove:
+                    cache_path = rec["cache_path"]
+                    Path(cache_path).unlink(missing_ok=True)
+                    self.end_time_cache.pop(cache_path, None)
+                grouped_recordings[camera] = grouped_recordings[camera][-keep_count:]
+
+            # see if detection has failed and unprocessed segments need to be deleted
+            unprocessed_segment_count = (
+                len(grouped_recordings[camera]) - processed_segment_count
+            )
+            if unprocessed_segment_count > keep_count:
+                logger.warning(
+                    f"Too many unprocessed recording segments in cache for {camera}. This likely indicates an issue with the detect stream, keeping the {keep_count} most recent segments out of {unprocessed_segment_count} and discarding the rest..."
                 )
                 to_remove = grouped_recordings[camera][:-keep_count]
                 for rec in to_remove:
@@ -209,7 +238,9 @@ class RecordingMaintainer(threading.Thread):
         if cache_path in self.end_time_cache:
             end_time, duration = self.end_time_cache[cache_path]
         else:
-            segment_info = await get_video_properties(cache_path, get_duration=True)
+            segment_info = await get_video_properties(
+                self.config.ffmpeg, cache_path, get_duration=True
+            )
 
             if segment_info["duration"]:
                 duration = float(segment_info["duration"])
@@ -387,7 +418,7 @@ class RecordingMaintainer(threading.Thread):
 
                 # add faststart to kept segments to improve metadata reading
                 p = await asyncio.create_subprocess_exec(
-                    "ffmpeg",
+                    self.config.ffmpeg.ffmpeg_path,
                     "-hide_banner",
                     "-y",
                     "-i",

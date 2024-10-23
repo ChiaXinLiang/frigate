@@ -69,6 +69,7 @@ Inference speeds vary greatly depending on the CPU, GPU, or VPU used, some known
 | Intel i5 7500        | ~ 15 ms         | Inference speeds on CPU were ~ 260 ms                                 |
 | Intel i5 1135G7      | 10 - 15 ms      |                                                                       |
 | Intel i5 12600K      | ~ 15 ms         | Inference speeds on CPU were ~ 35 ms                                  |
+| Intel Arc A750       | ~ 4 ms          |                                                                       |
 
 ### TensorRT - Nvidia GPU
 
@@ -86,6 +87,10 @@ Inference speeds will vary greatly depending on the GPU and the model used.
 | RTX 3070 Mobile | ~ 5 ms          |
 | Quadro P400 2GB | 20 - 25 ms      |
 | Quadro P2000    | ~ 12 ms         |
+
+#### AMD GPUs
+
+With the [rocm](../configuration/object_detectors.md#amdrocm-gpu-detector) detector Frigate can take advantage of many AMD GPUs.
 
 ### Community Supported:
 

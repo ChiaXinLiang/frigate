@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { DateRangePicker } from "../ui/calendar-range";
 import { DateRange } from "react-day-picker";
 import { useState } from "react";
+import PlatformAwareDialog from "../overlay/dialog/PlatformAwareDialog";
 
 type CalendarFilterButtonProps = {
   reviewSummary?: ReviewSummary;
@@ -24,6 +25,7 @@ export default function CalendarFilterButton({
   day,
   updateSelectedDay,
 }: CalendarFilterButtonProps) {
+  const [open, setOpen] = useState(false);
   const selectedDate = useFormattedTimestamp(
     day == undefined ? 0 : day?.getTime() / 1000 + 1,
     "%b %-d",
@@ -32,6 +34,7 @@ export default function CalendarFilterButton({
   const trigger = (
     <Button
       className="flex items-center gap-2"
+      aria-label="Select a date to filter by"
       variant={day == undefined ? "default" : "select"}
       size="sm"
     >
@@ -55,6 +58,7 @@ export default function CalendarFilterButton({
       <DropdownMenuSeparator />
       <div className="flex items-center justify-center p-2">
         <Button
+          aria-label="Reset"
           onClick={() => {
             updateSelectedDay(undefined);
           }}
@@ -65,20 +69,14 @@ export default function CalendarFilterButton({
     </>
   );
 
-  if (isMobile) {
-    return (
-      <Drawer>
-        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-        <DrawerContent>{content}</DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
-    <Popover>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent className="w-auto">{content}</PopoverContent>
-    </Popover>
+    <PlatformAwareDialog
+      trigger={trigger}
+      content={content}
+      contentClassName="w-auto"
+      open={open}
+      onOpenChange={setOpen}
+    />
   );
 }
 
@@ -103,6 +101,7 @@ export function CalendarRangeFilterButton({
   const trigger = (
     <Button
       className="flex items-center gap-2"
+      aria-label="Select a date to filter by"
       variant={range == undefined ? "default" : "select"}
       size="sm"
     >

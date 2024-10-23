@@ -19,13 +19,7 @@ export interface BirdseyeConfig {
   width: number;
 }
 
-export const ATTRIBUTE_LABELS = [
-  "amazon",
-  "face",
-  "fedex",
-  "license_plate",
-  "ups",
-];
+export type SearchModelSize = "small" | "large";
 
 export interface CameraConfig {
   audio: {
@@ -298,6 +292,18 @@ export interface FrigateConfig {
     retry_interval: number;
   };
 
+  genai: {
+    enabled: boolean;
+    provider: string;
+    base_url?: string;
+    api_key?: string;
+    model: string;
+    prompt: string;
+    object_prompts: { [key: string]: string };
+    required_zones: string[];
+    objects: string[];
+  };
+
   go2rtc: {
     streams: string[];
     webrtc: {
@@ -328,6 +334,7 @@ export interface FrigateConfig {
     path: string | null;
     width: number;
     colormap: { [key: string]: [number, number, number] };
+    attributes_map: { [key: string]: [string] };
   };
 
   motion: Record<string, unknown> | null;
@@ -405,6 +412,8 @@ export interface FrigateConfig {
 
   semantic_search: {
     enabled: boolean;
+    reindex: boolean;
+    model_size: SearchModelSize;
   };
 
   snapshots: {

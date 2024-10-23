@@ -611,23 +611,40 @@ function DetectionReview({
 
   // keyboard
 
-  useKeyboardListener(["a", "r"], (key, modifiers) => {
+  useKeyboardListener(["a", "r", "PageDown", "PageUp"], (key, modifiers) => {
     if (modifiers.repeat || !modifiers.down) {
       return;
     }
 
-    if (key == "a" && modifiers.ctrl) {
-      onSelectAllReviews();
-    }
-
-    if (key == "r" && selectedReviews.length > 0) {
-      currentItems?.forEach((item) => {
-        if (selectedReviews.includes(item.id)) {
-          item.has_been_reviewed = true;
-          markItemAsReviewed(item);
+    switch (key) {
+      case "a":
+        if (modifiers.ctrl) {
+          onSelectAllReviews();
         }
-      });
-      setSelectedReviews([]);
+        break;
+      case "r":
+        if (selectedReviews.length > 0) {
+          currentItems?.forEach((item) => {
+            if (selectedReviews.includes(item.id)) {
+              item.has_been_reviewed = true;
+              markItemAsReviewed(item);
+            }
+          });
+          setSelectedReviews([]);
+        }
+        break;
+      case "PageDown":
+        contentRef.current?.scrollBy({
+          top: contentRef.current.clientHeight / 2,
+          behavior: "smooth",
+        });
+        break;
+      case "PageUp":
+        contentRef.current?.scrollBy({
+          top: -contentRef.current.clientHeight / 2,
+          behavior: "smooth",
+        });
+        break;
     }
   });
 
@@ -720,6 +737,7 @@ function DetectionReview({
               <div className="col-span-full flex items-center justify-center">
                 <Button
                   className="text-white"
+                  aria-label="Mark these items as reviewed"
                   variant="select"
                   onClick={() => {
                     setSelectedReviews([]);
